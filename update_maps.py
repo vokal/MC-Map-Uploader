@@ -5,7 +5,7 @@ import os
 from boto.s3.connection import S3Connection
 from boto.s3.key import Key
 from ftplib import FTP
-from overviewer_core.progressbar import * 
+from progressbar import * 
 from subprocess import call
 
 class MCDownloader:

@@ -5,8 +5,8 @@ from s3uploader import S3Uploader
 from subprocess import call
 
 def load_overviewer_settings(settings):
-
     location = settings['overviewer']['location']
+    parser = location + 'configParser.py'
 
 def run_overviewer_gen(settings):
     generate = 'skip_generate' not in settings or settings['skip_generate'] == False
@@ -25,6 +25,10 @@ def run_overviewer_gen(settings):
 def run_overviewer_poi(settings):
     poi = 'skip_poi' not in settings or settings['skip_poi'] == False
     retcode = 0
+
+    if not poi:
+        return
+
     try:
         ovset = settings['overviewer']
         cmd = "python %s --config=\"%s\" --genpoi" % (ovset['location'] + 'overviewer.py', ovset['config'])
@@ -45,13 +49,17 @@ if 'skip_ftp' not in settings or settings['skip_ftp'] == False:
 
 upload = 'skip_s3' not in settings or settings['skip_s3'] == False
 
+ovset = settings['overviewer']
+
 uploader = S3Uploader(settings['s3'])
-if run_overviewer_gen(settings) and upload:
-    uploader.upload('changes.log')
+
+run_overviewer_gen(settings) 
+if upload:
+    uploader.upload(ovset['changelist'])
 
 run_overviewer_poi(settings)
 if upload:
-    uploader.upload_static('VOKAL_test')
+    uploader.upload_static(ovset['outdir'])
 
 
 

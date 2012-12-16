@@ -25,7 +25,8 @@ Example
     "overviewer": {
         "location": "/Users/user/Projects/Minecraft-Overviewer/",
         "config": "/Users/user/Projects/Minecraft-Overviewer/vokal_config.py",
-        "genpoi": true
+        "outdir": "map",
+        "changelist": "change.log"
     },
     "skip_ftp": false,
     "skip_generate": false,

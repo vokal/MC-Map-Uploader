@@ -46,7 +46,7 @@ class S3Uploader:
         if count == 0:
             return # No need to do anything
 
-        p = ProgressBar(widgets=['Uploading Changes: ', Percentage(), ' ', Bar(marker='#',left='[',right=']')], maxval=count)
+        p = ProgressBar(widgets=['Uploading Changes[', CounterWidget(),']: ', Percentage(), ' ', Bar(marker='#',left='[',right=']')], maxval=count)
         p.start()
 
         changes = open(changes)

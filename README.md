@@ -34,3 +34,25 @@ Example
     "skip_poi": false
 }
 ````
+
+Example Output
+````
+wmbest2@MacBook-Air.local in ~/Projects/MC-Map-Uploader [master*]
+$ python update_maps.py 
+Downloading file from server
+Size of world.zip: 403 MBs
+Download: 100% [##################################] Time: 00h 04m 08s   1.70 M/s
+
+Unzipping: 100% [############################################] Time: 00h 00m 05s
+2012-12-15 21:05:27  Welcome to Minecraft Overviewer!
+2012-12-15 21:05:33  Rendering 832 total tiles.
+ 97% [==========================================  ] 813 74.07t/s eta 00h 00m 00s
+2012-12-15 21:05:44  Rendering complete!
+Uploading Changes[832]: 100% [######################################################]
+2012-12-15 21:09:33  Looking for entities in <RegionSet regiondir='/Users/wmbest2/Projects/MC-Map-Uploader/world/DIM1/region'>
+2012-12-15 21:09:33  Done.
+2012-12-15 21:09:34  Done scanning regions
+2012-12-15 21:09:34  Writing out javascript files
+2012-12-15 21:09:34  Done
+Uploading Static: 100% [#######################################################]
+````

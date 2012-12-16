@@ -29,18 +29,17 @@ class MCDownloader:
         self.p.update(self.downloaded)
 
     def download_map(self):
-        self.f = open('world.zip', 'wb')
-
+        print 'Downloading file from server'
         ftp = FTP()
         ftp.connect(self.server, self.port)
         ftp.login(self.user, self.password)
 
+        self.f = open('world.zip', 'wb')
         ## TODO check to see if hash's are different?
         ftp.sendcmd("TYPE i")    # Switch to Binary mode
         size = int(ftp.size(self.filename))
 
-        print 'Downloading file from server'
-        print 'Size of world.zip: %s MBs' % (size / (1024*1024))
+        print 'Size of %s: %s MBs' % (self.filename, size / (1024*1024))
         self.p = ProgressBar(widgets=self.widgets, maxval=size)
         self.p.start()
         ftp.retrbinary('RETR %s' % self.filename, self.write_file) 
@@ -49,6 +48,7 @@ class MCDownloader:
         ftp.quit()
 
         self.f.close();
+        print ""
 
     def unzip(self):
         zf = zipfile.ZipFile(r'world.zip')

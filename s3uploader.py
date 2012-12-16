@@ -4,8 +4,6 @@ from boto.s3.key import Key
 from progressbar import * 
 
 class S3Uploader:
-
-    file_prefix = 'VOKAL'
     static_files = [
         'backbone.js',
         'baseMarkers.js',
@@ -45,13 +43,16 @@ class S3Uploader:
     def upload(self, changes):
         count = self.simplecount(changes)
 
+        if count == 0:
+            return # No need to do anything
+
         p = ProgressBar(widgets=['Uploading Changes: ', Percentage(), ' ', Bar(marker='#',left='[',right=']')], maxval=count)
         p.start()
 
         changes = open(changes)
         cwd = os.getcwd()
 
-        bucket = self.conn.lookup('vokal-minecraft')
+        bucket = self.conn.lookup(self.bucket)
         bucket.set_acl('public-read')
         k = Key(bucket)
 
@@ -64,7 +65,7 @@ class S3Uploader:
 
         p.finish()
 
-    def upload_static(self):
+    def upload_static(self, outfolder):
         count = len(self.static_files)
 
         p = ProgressBar(widgets=['Uploading Static: ', Percentage(), ' ', Bar(marker='#',left='[',right=']')], maxval=count)
@@ -77,7 +78,7 @@ class S3Uploader:
         k = Key(bucket)
 
         for i, line in enumerate(self.static_files):
-            filename= self.file_prefix + '/' + line
+            filename= outfolder + '/' + line
             k.key = filename
             k.set_contents_from_filename(filename)
             k.set_acl('public-read')

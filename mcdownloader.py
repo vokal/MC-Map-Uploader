@@ -48,7 +48,6 @@ class MCDownloader:
         ftp.quit()
 
         self.f.close();
-        print ""
 
     def unzip(self):
         zf = zipfile.ZipFile(r'world.zip')

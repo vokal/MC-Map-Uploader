@@ -1,3 +1,5 @@
+from gevent import monkey; monkey.patch_all()
+import gevent
 import os
 from boto.s3.connection import S3Connection
 from boto.s3.key import Key
@@ -39,6 +41,34 @@ class S3Uploader:
         for line in open(filename):
             lines += 1
         return lines
+
+    def upload_file(self, bucket, filename):
+        k = Key(bucket)
+        k.key = filename
+        k.set_contents_from_filename(filename)
+        k.set_acl('public-read')
+
+        self.p.update(self.p.currval + 1)
+
+
+    def upload_concurrent(self, bucket, changes):
+        greenlets = []
+        cwd = os.getcwd()
+        for i in range(501):
+            line = changes.readline()
+            if not line:
+                break
+            filename = line.replace(cwd + '/', '').replace('\n','')
+
+            greenlets.append(gevent.spawn(self.upload_file, bucket, filename))
+
+        gevent.joinall(greenlets)
+
+        if i == 500:
+            return True
+
+        return False
+        
     
     def upload(self, changes):
         count = self.simplecount(changes)
@@ -46,24 +76,21 @@ class S3Uploader:
         if count == 0:
             return # No need to do anything
 
-        p = ProgressBar(widgets=['Uploading Changes[', CounterWidget(),']: ', Percentage(), ' ', Bar(marker='#',left='[',right=']')], maxval=count)
-        p.start()
+        self.p = ProgressBar(widgets=['Uploading Changes[', CounterWidget(),']: ', Percentage(), ' ', Bar(marker='#',left='[',right=']')], maxval=count)
+        self.p.start()
 
         changes = open(changes)
-        cwd = os.getcwd()
 
         bucket = self.conn.lookup(self.bucket)
         bucket.set_acl('public-read')
-        k = Key(bucket)
 
-        for i, line in enumerate(changes):
-            filename = line.replace(cwd + '/', '').replace('\n','')
-            k.key = filename
-            k.set_contents_from_filename(filename)
-            k.set_acl('public-read')
-            p.update(i)
+        t1 = time.time()
+        while self.upload_concurrent(bucket, changes):
+            pass
+        t2 = time.time()
+        print '%s took %0.3f ms' % ('Concurrent upload', (t2-t1)*1000.0)
 
-        p.finish()
+        self.p.finish()
 
     def upload_static(self, outfolder):
         count = len(self.static_files)

@@ -43,35 +43,38 @@ class S3Uploader:
         return lines
 
     def upload_file(self, bucket, filename):
-        k = Key(bucket)
-        k.key = filename
-        k.set_contents_from_filename(filename)
-        k.set_acl('public-read')
+        try:
+            k = Key(bucket)
+            k.key = filename
+            k.set_contents_from_filename(filename)
+            k.set_acl('public-read')
 
-        self.p.update(self.p.currval + 1)
+            self.p.update(self.p.currval + 1)
+        except:
+            changes = open(self.changelist, 'a')
+            changes.write(filename + '\n')
+            changes.close()
+            
 
 
     def upload_concurrent(self, bucket, changes):
         greenlets = []
         cwd = os.getcwd()
-        for i in range(501):
-            line = changes.readline()
-            if not line:
-                break
+        from gevent.pool import Pool
+        p = Pool(100)
+        for i,line in enumerate(changes):
             filename = line.replace(cwd + '/', '').replace('\n','')
 
-            greenlets.append(gevent.spawn(self.upload_file, bucket, filename))
+            greenlets.append(p.spawn(self.upload_file, bucket, filename))
 
         gevent.joinall(greenlets)
-
-        if i == 500:
-            return True
-
-        return False
         
+    def chunks(self, l, n):
+        return [l[i:i+n] for i in range(0, len(l), n)]
     
-    def upload(self, changes):
-        count = self.simplecount(changes)
+    def upload(self, changelist):
+        self.changelist = changelist
+        count = self.simplecount(self.changelist)
 
         if count == 0:
             return # No need to do anything
@@ -79,14 +82,18 @@ class S3Uploader:
         self.p = ProgressBar(widgets=['Uploading Changes[', CounterWidget(),']: ', Percentage(), ' ', Bar(marker='#',left='[',right=']')], maxval=count)
         self.p.start()
 
-        changes = open(changes)
+        changes = open(self.changelist)
 
         bucket = self.conn.lookup(self.bucket)
         bucket.set_acl('public-read')
 
         t1 = time.time()
-        while self.upload_concurrent(bucket, changes):
-            pass
+        while True:
+            lines = changes.readlines(100000)
+            if not lines:
+                break
+            for chunk in self.chunks(lines, 10000):
+                self.upload_concurrent(bucket, chunk) 
         t2 = time.time()
         print '%s took %0.3f ms' % ('Concurrent upload', (t2-t1)*1000.0)
 

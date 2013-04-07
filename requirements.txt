@@ -1,3 +1,5 @@
-boto==2.8.0
+boto==2.6.0
 gevent==0.13.8
 greenlet==0.4.0
+httplib2==0.8
+oauth2client==1.1

@@ -2,6 +2,7 @@ import json
 from progressbar import * 
 from mcdownloader import MCDownloader 
 from s3uploader import S3Uploader
+from gsuploader import GSUploader
 from subprocess import call
 
 def load_overviewer_settings(settings):
@@ -47,19 +48,18 @@ if 'skip_ftp' not in settings or settings['skip_ftp'] == False:
     mc.download_map()
     mc.unzip()
 
-upload = 'skip_s3' not in settings or settings['skip_s3'] == False
-
 ovset = settings['overviewer']
 
-uploader = S3Uploader(settings['s3'])
+if 's3' in settings.keys() and settings['skip_s3'] is not False:
+    uploader = S3Uploader(settings['s3'])
+elif 'gs' in settings.keys() and settings['skip_s3'] is not False:
+    uploader = GSUploader(settings['gs'])
 
-run_overviewer_gen(settings) 
-if upload:
+if uploader:
+    if settings['skip_generate'] is False:
+        run_overviewer_gen(settings) 
+        run_overviewer_poi(settings)
+
     uploader.upload(ovset['changelist'])
-
-run_overviewer_poi(settings)
-if upload:
     uploader.upload_static(ovset['outdir'])
-
-
 

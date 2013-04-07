@@ -4,43 +4,15 @@ import os
 from boto.s3.connection import S3Connection
 from boto.s3.key import Key
 from progressbar import * 
+from uploader import Uploader
 
-class S3Uploader:
-    static_files = [
-        'backbone.js',
-        'baseMarkers.js',
-        'bed.png',
-        'compass_lower-left.png',
-        'compass_lower-right.png',
-        'compass_upper-left.png',
-        'compass_upper-right.png',
-        'control-bg-active.png',
-        'control-bg.png',
-        'index.html',
-        'markers.js',
-        'markersDB.js',
-        'index.html',
-        'overviewer.css',
-        'overviewer.js',
-        'overviewerConfig.js',
-        'regions.js',
-        'signpost_icon.png',
-        'signpost-shadow.png',
-        'signpost.png',
-        'underscore.js']
-
+class S3Uploader(Uploader):
     def __init__(self, settings):
         self.key = settings['key']
         self.secret = settings['secret']
         self.bucket = settings['bucket']
         
         self.conn = S3Connection(self.key, self.secret)
-
-    def simplecount(self, filename):
-        lines = 0
-        for line in open(filename):
-            lines += 1
-        return lines
 
     def upload_file(self, bucket, filename):
         try:
@@ -55,8 +27,6 @@ class S3Uploader:
             changes.write(filename + '\n')
             changes.close()
             
-
-
     def upload_concurrent(self, bucket, changes):
         greenlets = []
         cwd = os.getcwd()
@@ -68,9 +38,6 @@ class S3Uploader:
             greenlets.append(p.spawn(self.upload_file, bucket, filename))
 
         gevent.joinall(greenlets)
-        
-    def chunks(self, l, n):
-        return [l[i:i+n] for i in range(0, len(l), n)]
     
     def upload(self, changelist):
         self.changelist = changelist

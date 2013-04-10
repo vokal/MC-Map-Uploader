@@ -68,11 +68,47 @@ func sanitizePath(filename string) string {
 	return fmt.Sprintf("%s%s", od, strings.Split(filename, od)[1])
 }
 
-func upload_tiles() error {
+func uploadStatic() error {
+	staticFiles := []string{
+		"backbone.js",
+		"baseMarkers.js",
+		"bed.png",
+		"compass_lower-left.png",
+		"compass_lower-right.png",
+		"compass_upper-left.png",
+		"compass_upper-right.png",
+		"control-bg-active.png",
+		"control-bg.png",
+		"index.html",
+		"markers.js",
+		"markersDB.js",
+		"index.html",
+		"overviewer.css",
+		"overviewer.js",
+		"overviewerConfig.js",
+		"regions.js",
+		"signpost_icon.png",
+		"signpost-shadow.png",
+		"signpost.png",
+		"underscore.js",
+	}
+
+	filelist := make([]string, len(staticFiles))
+	for i, v := range staticFiles {
+		filelist[i] = config.Overviewer.Outputdir + "/" + v
+	}
+
+	doUpload(filelist)
+
+	return nil
+}
+
+func uploadTiles() error {
 	f, err := os.Open(config.Overviewer.Changelist)
 	if err != nil {
 		return err
 	}
+	defer f.Close()
 
 	var filelist []string
 	lines := bufio.NewReader(f)
@@ -87,7 +123,13 @@ func upload_tiles() error {
 		}
 	}
 
-	filecount := len(filelist)
+	doUpload(filelist)
+
+	return nil
+}
+
+func doUpload(filelist []string) {
+	length := len(filelist)
 
 	pb.BarStart = "["
 	pb.BarEnd = "]"
@@ -95,28 +137,31 @@ func upload_tiles() error {
 	pb.Current = "#"
 	pb.CurrentN = ">"
 
-	bar := pb.StartNew(filecount)
+	bar := pb.StartNew(length)
 
 	var total int
 
 	index := 0
-	for total < filecount {
+loop:
+	for {
 		select {
 		case <-uploads:
 			total = total + 1
 			bar.Increment()
+
+			if total == length {
+				break loop
+			}
 		default:
-			if index < filecount {
-				upload_file(filelist[index])
+			if index < length {
+				uploadFile(filelist[index])
 				index++
 			}
 		}
 	}
-
-	return nil
 }
 
-func upload_file(filename string) {
+func uploadFile(filename string) {
 	file, err := ioutil.ReadFile(filename)
 	if err != nil {
 		log.Fatalf("error opening %q: %v", filename, err)
@@ -157,7 +202,14 @@ func main() {
 		c := NewOauthClient("https://www.googleapis.com/auth/devstorage.read_write")
 		config.Gs.client = c
 
-		err = upload_tiles()
+		fmt.Println("Uploading tiles...")
+		err = uploadTiles()
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+
+		fmt.Println("Uploading static files...")
+		err = uploadStatic()
 		if err != nil {
 			log.Fatal(err.Error())
 		}

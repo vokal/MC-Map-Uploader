@@ -15,8 +15,7 @@ import (
 )
 
 var (
-	config  Config
-	uploads chan bool
+	config Config
 )
 
 type Config struct {
@@ -139,26 +138,23 @@ func doUpload(filelist []string) {
 
 	bar := pb.StartNew(length)
 
-	var total int
+	c := initWorkers()
+	go func() {
+		for i := 0; i < length; i++ {
+			uploadFile(filelist[i])
+		}
+	}()
 
-	index := 0
-loop:
-	for {
+	var total int
+	for total < length {
 		select {
-		case <-uploads:
+		case <-c:
 			total = total + 1
 			bar.Increment()
-
-			if total == length {
-				break loop
-			}
-		default:
-			if index < length {
-				uploadFile(filelist[index])
-				index++
-			}
 		}
 	}
+
+	bar.Finish()
 }
 
 func uploadFile(filename string) {
@@ -176,8 +172,6 @@ func uploadFile(filename string) {
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
-
-	uploads = make(chan bool, 10)
 
 	body, err := ioutil.ReadFile("config.json")
 	if err != nil {
@@ -197,8 +191,6 @@ func main() {
 	}
 
 	if !config.SkipGs {
-		initWorkers()
-
 		c := NewOauthClient("https://www.googleapis.com/auth/devstorage.read_write")
 		config.Gs.client = c
 

@@ -87,15 +87,15 @@ func upload_tiles() error {
 		}
 	}
 
-    filecount := len(filelist)
+	filecount := len(filelist)
 
-    pb.BarStart = "["
-    pb.BarEnd   = "]"
-    pb.Empty    = " "
-    pb.Current  = "#"
-    pb.CurrentN = ">"
-    
-    bar := pb.StartNew(filecount)
+	pb.BarStart = "["
+	pb.BarEnd = "]"
+	pb.Empty = " "
+	pb.Current = "#"
+	pb.CurrentN = ">"
+
+	bar := pb.StartNew(filecount)
 
 	var total int
 
@@ -104,12 +104,12 @@ func upload_tiles() error {
 		select {
 		case <-uploads:
 			total = total + 1
-            bar.Increment()
+			bar.Increment()
 		default:
-            if index < filecount {
-                upload_file(filelist[index])
-                index++
-            }
+			if index < filecount {
+				upload_file(filelist[index])
+				index++
+			}
 		}
 	}
 

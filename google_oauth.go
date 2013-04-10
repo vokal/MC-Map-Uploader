@@ -23,12 +23,12 @@ import (
 )
 
 var g_config = &oauth.Config{
-	ClientId:     "", // Set by --clientid or --clientid_file
-	ClientSecret: "", // Set by --secret or --secret_file
+	ClientId:     "",                                          // Set by --clientid or --clientid_file
+	ClientSecret: "",                                          // Set by --secret or --secret_file
 	Scope:        "https://www.googleapis.com/auth/moderator", // filled in per-API
 	AuthURL:      "https://accounts.google.com/o/oauth2/auth",
 	TokenURL:     "https://accounts.google.com/o/oauth2/token",
-    AccessType:   "offline",
+	AccessType:   "offline",
 }
 
 // Flags

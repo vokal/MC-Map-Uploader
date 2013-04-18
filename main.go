@@ -45,11 +45,8 @@ type Config struct {
 	SkipGs       bool `json:"skip_gs"`
 }
 
-func runOverviewer() error {
-	script := fmt.Sprintf("%soverviewer.py", config.Overviewer.Location)
-	configfile := fmt.Sprintf("--config=%s", config.Overviewer.Configfile)
-
-	cmd := exec.Command("python", script, configfile)
+func runOverviewer(params ...string) error {
+	cmd := exec.Command("python", params...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -130,6 +127,11 @@ func uploadTiles() error {
 func doUpload(filelist []string) {
 	length := len(filelist)
 
+    if length == 0 {
+        fmt.Println("No new tiles to upload")
+        return
+    }
+
 	pb.BarStart = "["
 	pb.BarEnd = "]"
 	pb.Empty = " "
@@ -170,6 +172,14 @@ func uploadFile(filename string) {
 	})
 }
 
+func doUploads() {
+	fmt.Println("Uploading tiles...")
+	err := uploadTiles()
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+}
+
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
@@ -184,7 +194,16 @@ func main() {
 	}
 
 	if !config.SkipGenerate {
-		err = runOverviewer()
+        script := fmt.Sprintf("%soverviewer.py", config.Overviewer.Location)
+        configfile := fmt.Sprintf("--config=%s", config.Overviewer.Configfile)
+
+		err = runOverviewer(script, configfile)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+
+        poi := "--genpoi"
+		err = runOverviewer(script, configfile, poi)
 		if err != nil {
 			log.Fatal(err.Error())
 		}
@@ -194,16 +213,6 @@ func main() {
 		c := NewOauthClient("https://www.googleapis.com/auth/devstorage.read_write")
 		config.Gs.client = c
 
-		fmt.Println("Uploading tiles...")
-		err = uploadTiles()
-		if err != nil {
-			log.Fatal(err.Error())
-		}
-
-		fmt.Println("Uploading static files...")
-		err = uploadStatic()
-		if err != nil {
-			log.Fatal(err.Error())
-		}
+		doUploads()
 	}
 }

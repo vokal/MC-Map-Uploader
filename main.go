@@ -33,6 +33,12 @@ type Config struct {
 		Changelist string `json:"changelist"`
 	} `json:"overviewer"`
 
+	S3 struct {
+		Key string `json:"key"`
+		Secret string `json:"secret"`
+		Bucket string `json:"bucket"`
+	} `json:"s3"`
+
 	Gs struct {
 		Bucket string `json:"bucket"`
 		client *http.Client
@@ -163,11 +169,23 @@ func uploadFile(filename string) {
 		log.Fatalf("error opening %q: %v", filename, err)
 	}
 
-	AddUploadable(&GsUpload{
-		path:   strings.Split(filename, config.Overviewer.Outputdir+"/")[1],
-		bucket: config.Gs.Bucket,
-		object: file,
-	})
+	if !config.SkipGs && config.Gs.Bucket != "" {
+		AddUploadable(&GsUpload{
+			path:   strings.Split(filename, config.Overviewer.Outputdir+"/")[1],
+			bucket: config.Gs.Bucket,
+			object: file,
+		})
+	}
+
+	if !config.SkipS3 && config.S3.Bucket != "" {
+		AddUploadable(&S3Upload{
+			accessKey: config.S3.Key,
+			secretKey: config.S3.Secret,
+			path:   strings.Split(filename, config.Overviewer.Outputdir+"/")[1],
+			bucket: config.S3.Bucket,
+			object: file,
+		})
+	}
 }
 
 func main() {
@@ -190,10 +208,12 @@ func main() {
 		}
 	}
 
-	if !config.SkipGs {
+	if !config.SkipGs && config.Gs.Bucket != "" {
 		c := NewOauthClient("https://www.googleapis.com/auth/devstorage.read_write")
 		config.Gs.client = c
+	}
 
+	if !config.SkipGs || !config.SkipS3 {
 		fmt.Println("Uploading tiles...")
 		err = uploadTiles()
 		if err != nil {

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/kr/s3"
 	"net/http"
-	"net/url"
 	"time"
 )
 
@@ -33,9 +32,7 @@ func (g *S3Upload) Upload() error {
 	s3.Sign(req, keys)
 	fmt.Println(req)
 
-	proxyUrl, err := url.Parse("http://localhost:8888")
-	myClient := &http.Client{Transport: &http.Transport{Proxy: http.ProxyURL(proxyUrl)}}
-	resp, err := myClient.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	fmt.Println("S3 Upload", g.path, urls)
 	fmt.Println(resp)
 	if err != nil {

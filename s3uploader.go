@@ -18,26 +18,25 @@ type S3Upload struct {
 }
 
 func (g *S3Upload) getMimetype(filename string) string {
-    extension := strings.Split(filename, ".")[1]
+	extension := strings.Split(filename, ".")[1]
 
-    switch extension {
-    case "jpg":
-        return "image/jpeg"
-    case "png":
-        return "image/png"
-    case "gif":
-        return "image/gif"
-    case "html":
-        return "text/html"
-    case "css":
-        return "text/css"
-    case "js":
-        return "text/javascript"
-    }
+	switch extension {
+	case "jpg":
+		return "image/jpeg"
+	case "png":
+		return "image/png"
+	case "gif":
+		return "image/gif"
+	case "html":
+		return "text/html"
+	case "css":
+		return "text/css"
+	case "js":
+		return "text/javascript"
+	}
 
-    return "text/plain"
+	return "text/plain"
 }
-
 
 func (g *S3Upload) Upload() error {
 	keys := s3.Keys{

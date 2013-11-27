@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/cheggaaa/pb"
+	"github.com/jlaffaye/goftp"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -12,6 +13,10 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
+)
+
+const (
+	WorldZip = "world.zip"
 )
 
 var (
@@ -34,7 +39,7 @@ type Config struct {
 	} `json:"overviewer"`
 
 	S3 struct {
-		Key string `json:"key"`
+		Key    string `json:"key"`
 		Secret string `json:"secret"`
 		Bucket string `json:"bucket"`
 	} `json:"s3"`
@@ -133,10 +138,10 @@ func uploadTiles() error {
 func doUpload(filelist []string) {
 	length := len(filelist)
 
-    if length == 0 {
-        fmt.Println("No new tiles to upload")
-        return
-    }
+	if length == 0 {
+		fmt.Println("No new tiles to upload")
+		return
+	}
 
 	pb.BarStart = "["
 	pb.BarEnd = "]"
@@ -183,11 +188,11 @@ func uploadFile(filename string) {
 		AddUploadable(&S3Upload{
 			accessKey: config.S3.Key,
 			secretKey: config.S3.Secret,
-			path:   strings.Split(filename, config.Overviewer.Outputdir+"/")[1],
-			bucket: config.S3.Bucket,
-			object: file,
+			path:      strings.Split(filename, config.Overviewer.Outputdir+"/")[1],
+			bucket:    config.S3.Bucket,
+			object:    file,
 		})
-        }
+	}
 }
 
 func doUploads() {
@@ -198,7 +203,79 @@ func doUploads() {
 	}
 }
 
-func main() {
+func unzipBackup() error {
+	cmd := exec.Command("unzip", WorldZip)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	err := cmd.Start()
+	if err != nil {
+		return err
+	}
+
+	return cmd.Wait()
+}
+
+func handleFtp() error {
+	conn, err := ftp.Connect(fmt.Sprintf("%s:%d", config.Ftp.Server, config.Ftp.Port))
+	if err != nil {
+		return err
+	}
+	defer conn.Quit()
+
+	err = conn.Login(config.Ftp.User, config.Ftp.Password)
+	if err != nil {
+		return err
+	}
+
+	src, err := conn.Retr(WorldZip)
+	if err != nil {
+		return err
+	}
+
+	dest, err := os.Create(WorldZip)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Downloading world.zip...")
+	buf := bufio.NewWriter(dest)
+	buf.ReadFrom(src)
+	buf.Flush()
+	fmt.Println("Download complete")
+
+	fmt.Println("Unpacking world.zip...")
+	unzipBackup()
+
+	return nil
+}
+
+func handleGenerate() error {
+	script := fmt.Sprintf("%soverviewer.py", config.Overviewer.Location)
+	configfile := fmt.Sprintf("--config=%s", config.Overviewer.Configfile)
+
+	err := runOverviewer(script, configfile)
+	if err != nil {
+		return err
+	}
+
+	poi := "--genpoi"
+	return runOverviewer(script, configfile, poi)
+}
+
+func handleUpload() error {
+	fmt.Println("Uploading tiles...")
+	err := uploadTiles()
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Uploading static files...")
+	return uploadStatic()
+}
+
+func init() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	body, err := ioutil.ReadFile("config.json")
@@ -210,18 +287,18 @@ func main() {
 	if err != nil {
 		panic(err.Error())
 	}
+}
 
-	if !config.SkipGenerate {
-        script := fmt.Sprintf("%soverviewer.py", config.Overviewer.Location)
-        configfile := fmt.Sprintf("--config=%s", config.Overviewer.Configfile)
-
-		err = runOverviewer(script, configfile)
+func main() {
+	if !config.SkipFtp {
+		err := handleFtp()
 		if err != nil {
 			log.Fatal(err.Error())
 		}
+	}
 
-        poi := "--genpoi"
-		err = runOverviewer(script, configfile, poi)
+	if !config.SkipGenerate {
+		err := handleGenerate()
 		if err != nil {
 			log.Fatal(err.Error())
 		}
@@ -233,14 +310,7 @@ func main() {
 	}
 
 	if !config.SkipGs || !config.SkipS3 {
-		fmt.Println("Uploading tiles...")
-		err = uploadTiles()
-		if err != nil {
-			log.Fatal(err.Error())
-		}
-
-		fmt.Println("Uploading static files...")
-		err = uploadStatic()
+		err := handleUpload()
 		if err != nil {
 			log.Fatal(err.Error())
 		}

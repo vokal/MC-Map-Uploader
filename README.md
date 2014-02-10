@@ -36,7 +36,7 @@ Example
 }
 ````
 
-Example Output
+Example Output 
 ````
 wmbest2@MacBook-Air.local in ~/Projects/MC-Map-Uploader [master*]
 $ ./MC-Map-Uploader

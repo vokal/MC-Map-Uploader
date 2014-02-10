@@ -38,7 +38,7 @@ Example
 Example Output
 ````
 wmbest2@MacBook-Air.local in ~/Projects/MC-Map-Uploader [master*]
-$ python update_maps.py 
+$ ./MC-Map-Uploader
 Downloading file from server
 Size of world.zip: 403 MBs
 Download: 100% [##################################] Time: 00h 04m 08s   1.70 M/s

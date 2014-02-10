@@ -87,8 +87,6 @@ func uploadStatic() error {
 		"control-bg-active.png",
 		"control-bg.png",
 		"index.html",
-		"markers.js",
-		"markersDB.js",
 		"index.html",
 		"overviewer.css",
 		"overviewer.js",
@@ -252,7 +250,7 @@ func handleFtp() error {
 }
 
 func handleGenerate() error {
-	script := fmt.Sprintf("%soverviewer.py", config.Overviewer.Location)
+	script := fmt.Sprintf("%s", config.Overviewer.Location)
 	configfile := fmt.Sprintf("--config=%s", config.Overviewer.Configfile)
 
 	err := runOverviewer(script, configfile)

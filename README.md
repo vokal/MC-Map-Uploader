@@ -31,6 +31,7 @@ Example
     "skip_ftp": false,
     "skip_generate": false,
     "skip_s3": false,
+    "skip_gs": true,
     "skip_poi": false
 }
 ````
